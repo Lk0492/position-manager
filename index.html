@@ -795,6 +795,36 @@ body {
   line-height: 1;
 }
 .symbol-tag .tag-del:hover { background: rgba(0,113,227,0.2); }
+/* ---- Symbol Input with clear button ---- */
+.symbol-input-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.symbol-input-inner input {
+  padding-right: 36px;
+}
+.symbol-clear-btn {
+  position: absolute;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: var(--surface2);
+  color: var(--text3);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.symbol-clear-btn:hover { background: var(--border); color: var(--text); }
+.symbol-clear-btn.visible { display: flex; }
+
 .symbol-select-wrap {
   min-width: 160px;
   display: flex;
@@ -956,7 +986,10 @@ body {
         <div class="symbol-input-wrap" style="flex:1;">
           <div class="field" style="gap:5px;">
             <label>输入币种名称 <span style="font-weight:400;font-size:10px;color:var(--text3);">（点击添加后保存到历史）</span></label>
-            <input type="text" id="symbolInput" value="BTC" placeholder="例如 BTC、ETH、BNB" maxlength="20">
+            <div class="symbol-input-inner">
+              <input type="text" id="symbolInput" value="" placeholder="例如 BTC、ETH、BNB" maxlength="20">
+              <button class="symbol-clear-btn" id="symbolClearBtn" onclick="clearSymbolInput()" title="清空">&#x2715;</button>
+            </div>
           </div>
           <div class="symbol-tags" id="symbolTags"></div>
         </div>
@@ -1315,6 +1348,27 @@ document.getElementById('symbolInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); addSymbol(); }
 });
 
+// Symbol input clear button logic
+const symbolInput = document.getElementById('symbolInput');
+const symbolClearBtn = document.getElementById('symbolClearBtn');
+
+function updateSymbolClearBtn() {
+  if (symbolInput.value.trim().length > 0) {
+    symbolClearBtn.classList.add('visible');
+  } else {
+    symbolClearBtn.classList.remove('visible');
+  }
+}
+
+symbolInput.addEventListener('input', updateSymbolClearBtn);
+updateSymbolClearBtn(); // init on load
+
+function clearSymbolInput() {
+  symbolInput.value = '';
+  updateSymbolClearBtn();
+  symbolInput.focus();
+}
+
 // ============================================================
 // History Filter
 // ============================================================
@@ -1504,7 +1558,8 @@ function calculate() {
   const leverage      = parseFloat(document.getElementById('leverage').value);
   const direction     = document.querySelector('input[name="direction"]:checked').value;
   const exchange      = document.getElementById('exchange').value;
-  const symbol        = symbolList.length > 0 ? symbolList.join(',') : null;
+  const inputVal      = document.getElementById('symbolInput').value.trim().toUpperCase();
+  const symbol        = inputVal || null;
   const { maker: makerRate, taker: takerRate } = getFeeRates();
   const exchangeNames = { binance:'币安', okx:'OKX', bybit:'Bybit', huobi:'火币', custom:'自定义' };
 
