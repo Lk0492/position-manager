@@ -1,0 +1,2157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仓位管理器</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg: #ffffff;
+  --surface: #f5f5f7;
+  --surface2: #f0f0f3;
+  --border: #d2d2d7;
+  --text: #1d1d1f;
+  --text2: #6e6e73;
+  --text3: #86868b;
+  --blue: #0071e3;
+  --blue2: #007aff;
+  --blue-light: rgba(0,113,227,0.08);
+  --green: #34c759;
+  --green-bg: rgba(52,199,89,0.1);
+  --red: #ff3b30;
+  --red-bg: rgba(255,59,48,0.1);
+  --orange: #ff9500;
+  --orange-bg: rgba(255,149,0,0.1);
+  --link: #0071e3;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', 'Helvetica', 'Arial', 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c1c1c6; border-radius: 3px; }
+
+.container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 40px 80px;
+}
+
+/* ---- Typography ---- */
+.hero-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  text-align: center;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.hero-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text2);
+  text-align: center;
+  letter-spacing: -0.1px;
+  line-height: 1.4;
+  margin-bottom: 28px;
+}
+
+/* ---- Main Layout: Left | Right ---- */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ---- Card ---- */
+.card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 20px 24px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: var(--blue);
+  border-radius: 1.5px;
+}
+
+/* ---- Form ---- */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+.grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+.field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01px;
+}
+.field label .req {
+  color: var(--red);
+  font-size: 11px;
+  margin-left: 2px;
+}
+.field label .tip-label {
+  font-weight: 400;
+  font-size: 10px;
+  color: var(--text3);
+  margin-left: 4px;
+}
+.field input, .field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+.field input::placeholder { color: var(--text3); font-weight: 400; }
+.field input[type="number"] { font-variant-numeric: tabular-nums; }
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2386868b' d='M6 8.5L1.5 4h9z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
+}
+.field select option { background: var(--bg); color: var(--text); }
+.field-note {
+  font-size: 10px;
+  color: var(--text3);
+  line-height: 1.5;
+  letter-spacing: -0.1px;
+  margin-top: 2px;
+}
+
+/* ---- Radio Toggle ---- */
+.radio-group {
+  display: flex;
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 5px;
+  overflow: hidden;
+}
+.radio-toggle {
+  flex: 1;
+  text-align: center;
+}
+.radio-toggle input { display: none; }
+.radio-toggle label {
+  display: block;
+  padding: 10px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 9px;
+  transition: all 0.2s;
+  letter-spacing: -0.1px;
+  user-select: none;
+}
+.radio-toggle input:checked + label {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,113,227,0.3);
+}
+.radio-toggle input#dirLong:checked + label {
+  background: var(--green);
+  box-shadow: 0 2px 8px rgba(52,199,89,0.3);
+}
+.radio-toggle input#dirShort:checked + label {
+  background: var(--red);
+  box-shadow: 0 2px 8px rgba(255,59,48,0.3);
+}
+
+/* ---- Auto direction hint ---- */
+.auto-dir-hint {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.auto-dir-hint.hint-long { color: var(--green); }
+.auto-dir-hint.hint-short { color: var(--red); }
+
+/* ---- Divider ---- */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+/* ---- Buttons ---- */
+.btn-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+.btn {
+  flex: 1;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: -0.1px;
+}
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(0,113,227,0.25);
+}
+.btn-primary:hover {
+  background: #0077ed;
+  box-shadow: 0 5px 18px rgba(0,113,227,0.35);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,113,227,0.2);
+}
+.btn-secondary {
+  background: var(--bg);
+  color: var(--blue);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--surface2);
+  border-color: var(--blue);
+}
+.btn-icon { margin-right: 6px; }
+
+/* ---- Validation ---- */
+#validationMsg { margin-top: 16px; }
+
+/* ---- Results ---- */
+.result-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 24px 28px;
+  height: 100%;
+}
+
+/* Exchange + fee info strip */
+.result-info-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.result-info-strip .info-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.result-info-strip .info-tag .tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.result-info-strip .info-tag .tag-dot.orange { background: var(--orange); }
+.result-info-strip .info-tag .tag-dot.red { background: var(--red); }
+
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.stat-pill {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.stat-pill .stat-key {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+.stat-pill .stat-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.result-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.2s;
+}
+.result-item:hover { border-color: #b8b8bf; }
+.result-item.full { grid-column: 1 / -1; }
+
+.result-item .ri-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.result-item .ri-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+.result-item .ri-sub {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 3px;
+  letter-spacing: -0.05px;
+}
+.result-item .ri-value.green { color: var(--green); }
+.result-item .ri-value.red { color: var(--red); }
+.result-item .ri-value.blue { color: var(--blue); }
+.result-item .ri-value.orange { color: var(--orange); }
+.result-item .ri-value.purple { color: #af52de; }
+
+/* ---- Ratio Badge ---- */
+.ratio-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0;
+}
+.ratio-badge.pass { background: rgba(52,199,89,0.12); color: var(--green); }
+.ratio-badge.warn { background: rgba(255,149,0,0.12); color: var(--orange); }
+.ratio-badge.fail { background: rgba(255,59,48,0.12); color: var(--red); }
+
+/* ---- Progress Bar ---- */
+.progress-track {
+  height: 5px;
+  background: var(--surface2);
+  border-radius: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.progress-fill.blue { background: linear-gradient(90deg, var(--blue), #5ac8fa); }
+.progress-fill.red { background: var(--red); }
+.progress-fill.green { background: var(--green); }
+.progress-fill.orange { background: var(--orange); }
+
+/* ---- Risk Check ---- */
+.risk-check-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.risk-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: -0.05px;
+}
+.risk-check-item.pass {
+  background: var(--green-bg);
+  border: 1px solid rgba(52,199,89,0.2);
+  color: #1a5e2a;
+}
+.risk-check-item.warn {
+  background: var(--orange-bg);
+  border: 1px solid rgba(255,149,0,0.2);
+  color: #7a4500;
+}
+.risk-check-item.danger {
+  background: var(--red-bg);
+  border: 1px solid rgba(255,59,48,0.2);
+  color: #7a1208;
+}
+.risk-check-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.risk-check-text strong { font-weight: 700; }
+
+/* ---- Warning ---- */
+.warn-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.6;
+  letter-spacing: -0.05px;
+}
+.warn-box.danger { border-color: rgba(255,59,48,0.25); background: rgba(255,59,48,0.04); }
+.warn-box.caution { border-color: rgba(255,149,0,0.25); background: rgba(255,149,0,0.04); }
+.warn-box.good { border-color: rgba(52,199,89,0.25); background: rgba(52,199,89,0.04); }
+.warn-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+/* ---- History ---- */
+.history-section {
+  margin-top: 16px;
+}
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.history-header .section-label { margin-bottom: 0; }
+
+.history-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.history-filter {
+  display: flex;
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  overflow: hidden;
+}
+.history-filter button {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: 7px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.history-filter button.active {
+  background: var(--blue);
+  color: #fff;
+}
+.history-filter button:hover:not(.active) { background: var(--surface2); }
+
+.btn-sm {
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: -0.05px;
+}
+.btn-sm:hover { background: var(--surface2); color: var(--text); border-color: #b8b8bf; }
+.btn-sm.danger:hover { background: rgba(255,59,48,0.06); color: var(--red); border-color: rgba(255,59,48,0.3); }
+.btn-sm.active { background: rgba(0,113,227,0.1); color: var(--blue); border-color: var(--blue); }
+
+.history-table-wrap {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.history-table thead tr {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.history-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+}
+.history-table thead th:first-child { width: 40px; text-align: center; }
+.history-table tbody tr {
+  border-bottom: 1px solid var(--surface2);
+  transition: background 0.1s;
+}
+.history-table tbody tr:last-child { border-bottom: none; }
+.history-table tbody tr:hover { background: var(--surface); }
+.history-table tbody tr.selected { background: rgba(0,113,227,0.05); }
+.history-table tbody td {
+  padding: 10px 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+.history-table .td-check { text-align: center; }
+.history-table .td-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--blue);
+}
+.history-table .td-dir {
+  font-weight: 600;
+  font-size: 11px;
+}
+.history-table .td-dir.long { color: var(--green); }
+.history-table .td-dir.short { color: var(--red); }
+.history-table .td-val { font-weight: 600; }
+.history-table .td-val.green { color: var(--green); }
+.history-table .td-val.red { color: var(--red); }
+.history-table .td-val.blue { color: var(--blue); }
+.history-table .td-val.orange { color: var(--orange); }
+.history-table .td-time {
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+.history-table .td-action {
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+.history-table .del-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.history-table .del-btn:hover { background: rgba(255,59,48,0.1); color: var(--red); }
+
+.history-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}
+.history-empty .empty-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.5; }
+
+/* ---- Greeting Banner ---- */
+.greeting-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 20px;
+  margin-top: 0;
+  margin-bottom: 24px;
+  transition: border-color 0.3s;
+}
+.greeting-banner.good  { border-color: rgba(52,199,89,0.3);  background: rgba(52,199,89,0.04);  }
+.greeting-banner.caution { border-color: rgba(255,149,0,0.3); background: rgba(255,149,0,0.04); }
+.greeting-banner.danger { border-color: rgba(255,59,48,0.3); background: rgba(255,59,48,0.04); }
+.greeting-icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
+.greeting-body { display: flex; flex-direction: column; gap: 3px; }
+.greeting-msg { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: -0.1px; }
+.greeting-time { font-size: 11px; color: var(--text3); font-variant-numeric: tabular-nums; }
+
+/* ---- Tips ---- */
+.tips-section {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 20px 24px;
+  margin-top: 16px;
+}
+.tips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.tip-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.tip-card h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 5px;
+  letter-spacing: -0.05px;
+}
+.tip-card p {
+  font-size: 11px;
+  color: var(--text2);
+  line-height: 1.6;
+  letter-spacing: -0.05px;
+}
+.tip-card .tip-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 6px;
+  letter-spacing: -1px;
+}
+.tip-card .tip-num.green { color: var(--green); }
+.tip-card .tip-num.red { color: var(--red); }
+
+/* ---- Download Toast ---- */
+.toast {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--text);
+  color: #fff;
+  padding: 13px 26px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 9999;
+  pointer-events: none;
+  letter-spacing: -0.1px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ---- Symbol Management ---- */
+.symbol-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.symbol-input-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.symbol-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.symbol-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 12px;
+  background: var(--blue-light);
+  border: 1px solid rgba(0,113,227,0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.symbol-tag.drag-over {
+  border-color: var(--blue);
+  background: rgba(0,113,227,0.15);
+  transform: scale(1.05);
+}
+.symbol-tag .tag-del {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.symbol-tag .tag-del:hover { background: rgba(0,113,227,0.2); }
+.symbol-select-wrap {
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.symbol-select-wrap select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.symbol-select-wrap select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-light);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .container { padding: 20px 20px 60px; }
+  .main-layout { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4, .result-grid, .stats-row, .tips-grid { grid-template-columns: 1fr; }
+  .history-table thead { display: none; }
+  .history-table tbody td { display: block; padding: 6px 14px; }
+  .history-table tbody td::before {
+    content: attr(data-label);
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .history-table .td-check { text-align: left; }
+  .history-table .td-action { padding: 6px 14px; }
+  .result-item .ri-value { font-size: 16px; }
+  .history-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero-label">仓位管理器</div>
+  <h1 class="hero-title">精准仓位计算</h1>
+  <p class="hero-sub">严格风险控制 · 理性交易 · 逐条风险检查</p>
+
+  <!-- Main Layout: Left Input | Right Results -->
+  <div class="main-layout">
+
+    <!-- LEFT: Input Form -->
+    <div class="card" id="formCard">
+      <div class="section-label">基础参数</div>
+      <div class="grid-2">
+        <div class="field">
+          <label>交易所</label>
+          <select id="exchange">
+            <option value="binance">币安 Binance</option>
+            <option value="okx">OKX 欧易</option>
+            <option value="bybit">Bybit</option>
+            <option value="huobi">火币 Huobi</option>
+            <option value="custom">自定义费率</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>交易方向</label>
+          <div class="radio-group">
+            <div class="radio-toggle"><input type="radio" name="direction" id="dirLong" value="long"><label for="dirLong">做多 ▲</label></div>
+            <div class="radio-toggle"><input type="radio" name="direction" id="dirShort" value="short" checked><label for="dirShort">做空 ▼</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>账户总额 (USDT) <span class="req">*</span></label>
+          <input type="number" id="accountTotal" value="1450" min="1" step="any" placeholder="例如 10000">
+        </div>
+        <div class="field">
+          <label>每笔最大亏损 <span class="req">&#x2605; 核心</span></label>
+          <select id="maxLossPercent">
+            <option value="0.5">0.5%</option>
+            <option value="1">1%</option>
+            <option value="2" selected>2%</option>
+            <option value="3">3%</option>
+            <option value="5">5%</option>
+          </select>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-label">交易设置</div>
+      <div class="grid-3">
+        <div class="field">
+          <label>开仓价格 <span class="req">*</span></label>
+          <input type="number" id="entryPrice" value="" min="0.01" step="any" placeholder="例如 100000">
+        </div>
+        <div class="field">
+          <label>止损价格 <span class="req">*</span></label>
+          <input type="number" id="stopLoss" value="" min="0.01" step="any" placeholder="例如 105000">
+        </div>
+        <div class="field">
+          <label>止盈价格 <span class="req">*</span></label>
+          <input type="number" id="takeProfit" value="" min="0.01" step="any" placeholder="例如 70000">
+        </div>
+        <div class="field">
+          <label>杠杆倍数</label>
+          <select id="leverage">
+            <option value="1">1x 现货</option>
+            <option value="2" selected>2x</option>
+            <option value="3">3x</option>
+            <option value="5">5x</option>
+            <option value="10">10x</option>
+            <option value="15">15x</option>
+            <option value="20">20x</option>
+            <option value="50">50x</option>
+            <option value="100">100x</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: span 2;">
+          <label>手续费率（Taker / Maker）</label>
+          <select id="feePreset">
+            <option value="binance_futures_custom" selected>币安U本位合约 (0.045% / 0.018%)</option>
+            <option value="binance_futures">币安合约: 0.050% / 0.020%</option>
+            <option value="binance_spot">币安现货: 0.100% / 0.100%</option>
+            <option value="okx_futures">OKX合约: 0.050% / 0.020%</option>
+            <option value="bybit_futures">Bybit合约: 0.060% / 0.020%</option>
+            <option value="huobi_futures">火币合约: 0.050% / 0.020%</option>
+            <option value="custom_fee">自定义费率</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="customFeeField" style="display:none; margin-top:14px;">
+        <div class="grid-2">
+          <div>
+            <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:5px;font-weight:600;">Maker 费率 (%)</label>
+            <input type="number" id="customFeeMaker" value="0.018" min="0" step="0.001">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:5px;font-weight:600;">Taker 费率 (%)</label>
+            <input type="number" id="customFeeTaker" value="0.045" min="0" step="0.001">
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Symbol Input -->
+      <div class="section-label">币种管理</div>
+      <div class="symbol-field">
+        <div class="symbol-input-wrap" style="flex:1;">
+          <div class="field" style="gap:5px;">
+            <label>输入币种名称 <span style="font-weight:400;font-size:10px;color:var(--text3);">（点击添加后保存到历史）</span></label>
+            <input type="text" id="symbolInput" value="BTC" placeholder="例如 BTC、ETH、BNB" maxlength="20">
+          </div>
+          <div class="symbol-tags" id="symbolTags"></div>
+        </div>
+        <div class="symbol-select-wrap" style="display:flex;align-items:flex-end;padding-bottom:1px;">
+          <button class="btn btn-secondary" onclick="addSymbol()" style="padding:11px 18px;white-space:nowrap;">
+            + 添加
+          </button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="calcBtn" onclick="calculate()">
+          <span class="btn-icon">&#x1F4CA;</span>计算仓位
+        </button>
+        <button class="btn btn-secondary" onclick="resetForm()">
+          <span class="btn-icon">&#x1F504;</span>重置
+        </button>
+      </div>
+
+      <div id="validationMsg"></div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="result-card" id="resultCard" style="display:none;">
+
+      <!-- Exchange info strip -->
+      <div class="result-info-strip" id="resultInfoStrip"></div>
+
+      <!-- Top stats -->
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="stat-key">交易方向</div>
+          <div class="stat-val" id="statDirection" style="font-size:15px;">做空 ▼</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-key">盈亏比</div>
+          <div class="stat-val" id="statRiskReward">--</div>
+        </div>
+        <div class="stat-pill">
+          <div class="stat-key">真实杠杆</div>
+          <div class="stat-val" id="statRealLeverage">--</div>
+        </div>
+      </div>
+
+      <div class="result-grid">
+        <!-- Key metrics -->
+        <div class="result-item full">
+          <div class="ri-label">&#x1F4B0; 开仓名义仓位</div>
+          <div class="ri-value orange" id="resPositionValue">--</div>
+          <div class="progress-track"><div class="progress-fill blue" id="posValueBar" style="width:0%"></div></div>
+        </div>
+
+        <div class="result-item">
+          <div class="ri-label">&#x1F4CD; 所需保证金</div>
+          <div class="ri-value blue" id="resMargin">--</div>
+          <div class="ri-sub" id="resMarginSub">名义仓位 &#247; 杠杆倍数</div>
+        </div>
+
+        <div class="result-item">
+          <div class="ri-label">&#x26A0; 最大亏损金额</div>
+          <div class="ri-value red" id="resMaxLoss">--</div>
+          <div class="ri-sub" id="resMaxLossSub">账户总额的 1%</div>
+        </div>
+
+        <!-- Price distances -->
+        <div class="result-item">
+          <div class="ri-label">&#x1F4C8; 止损距离</div>
+          <div class="ri-value red" id="resStopDistance">--</div>
+          <div class="ri-sub" id="resStopDistanceSub">价格变化幅度</div>
+        </div>
+
+        <div class="result-item">
+          <div class="ri-label">&#x1F4C9; 止盈距离</div>
+          <div class="ri-value green" id="resProfitDistance">--</div>
+          <div class="ri-sub" id="resProfitDistanceSub">价格变化幅度</div>
+        </div>
+
+        <!-- Fee -->
+        <div class="result-item">
+          <div class="ri-label">&#x1F4B3; 手续费（双边）</div>
+          <div class="ri-value" id="resTotalFee">--</div>
+          <div class="ri-sub" id="resFeeSub">开仓 + 平仓</div>
+        </div>
+
+        <!-- Actual stop cost (NEW) -->
+        <div class="result-item">
+          <div class="ri-label">&#x26A1; 实际止损成本</div>
+          <div class="ri-value red" id="resActualStopCost">--</div>
+          <div class="ri-sub">止损距离 + 手续费&#xD7;2</div>
+        </div>
+
+        <!-- Break-even price (NEW) -->
+        <div class="result-item">
+          <div class="ri-label">&#x1F4C0; 保本价格</div>
+          <div class="ri-value purple" id="resBreakEven">--</div>
+          <div class="ri-sub" id="resBreakEvenSub">手续费影响后的最低盈利价</div>
+        </div>
+
+        <!-- Expected profit (NEW) -->
+        <div class="result-item">
+          <div class="ri-label">&#x2B06; 预期盈利（扣除手续费）</div>
+          <div class="ri-value green" id="resExpectedProfit">--</div>
+          <div class="ri-sub" id="resExpectedProfitSub">名义仓位 &#215; 止盈距离 - 手续费&#xD7;2</div>
+        </div>
+
+        <!-- Quantity -->
+        <div class="result-item">
+          <div class="ri-label">&#x1F4B8; 可买入数量</div>
+          <div class="ri-value orange" id="resQuantity">--</div>
+          <div class="ri-sub" id="resQuantitySub">名义仓位 &#247; 开仓价格</div>
+        </div>
+
+        <!-- Real leverage -->
+        <div class="result-item">
+          <div class="ri-label">&#x26A1; 真实杠杆</div>
+          <div class="ri-value" id="resRealLeverage">--</div>
+          <div class="ri-sub">名义仓位 &#247; 账户总额</div>
+        </div>
+
+        <!-- Margin ratio (NEW) -->
+        <div class="result-item">
+          <div class="ri-label">&#x1F4CA; 保证金占比</div>
+          <div class="ri-value" id="resMarginRatio">--</div>
+          <div class="ri-sub" id="resMarginRatioSub">保证金 &#247; 账户总额</div>
+        </div>
+
+        <!-- R:R ratio -->
+        <div class="result-item">
+          <div class="ri-label">&#x2696; 盈亏比</div>
+          <div class="ri-value" id="resRiskRewardRatio">--</div>
+          <div class="ri-sub">预期盈利 &#247; 最大亏损</div>
+        </div>
+
+        <!-- Liquidation -->
+        <div class="result-item full">
+          <div class="ri-label">&#x26A1; 预估爆仓价格</div>
+          <div class="ri-value red" id="resLiquidation">--</div>
+          <div class="ri-sub" id="resLiquidationSub">维持保证金率按 0.5% 计算</div>
+          <div class="progress-track"><div class="progress-fill red" id="liqBar" style="width:0%"></div></div>
+        </div>
+
+      </div>
+
+      <!-- Risk checks (逐条检查, NEW) -->
+      <div id="riskCheckList"></div>
+
+      <!-- Loss warning -->
+      <div id="lossWarning"></div>
+    </div>
+
+  </div><!-- /main-layout -->
+
+  <!-- History -->
+  <div class="card history-section" id="historySection">
+    <div class="history-header">
+      <div class="section-label">&#x1F4C4; 计算历史记录</div>
+      <div class="history-actions">
+        <!-- Filter by direction -->
+        <div class="history-filter" id="historyFilter">
+          <button class="active" onclick="setHistoryFilter('all')">全部</button>
+          <button onclick="setHistoryFilter('long')">做多</button>
+          <button onclick="setHistoryFilter('short')">做空</button>
+        </div>
+        <button class="btn-sm" id="selectModeBtn" onclick="toggleSelectMode()">
+          <span>&#x2714;</span> 选择删除
+        </button>
+        <button class="btn-sm danger" id="batchDeleteBtn" onclick="batchDeleteSelected()" style="display:none;">
+          <span>&#x2715;</span> 删除选中
+        </button>
+        <button class="btn-sm" onclick="downloadHistory()">
+          <span>&#x2B07;</span> 下载 Excel
+        </button>
+        <button class="btn-sm danger" onclick="clearHistory()">
+          <span>&times;</span> 清空
+        </button>
+      </div>
+    </div>
+
+    <div class="history-table-wrap" id="historyWrap">
+      <div class="history-empty" id="historyEmpty">
+        <div class="empty-icon">&#x1F4C5;</div>
+        暂无历史记录<br>完成计算后自动保存
+      </div>
+      <div id="historyTableWrapInner" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="tips-section">
+    <div class="section-label">&#x2139; 策略核心规则</div>
+    <div class="tips-grid">
+      <div class="tip-card">
+        <h4>&#x2694; 真实杠杆</h4>
+        <p>真实杠杆 = 名义仓位 &#247; 账户总额<br>100x 表面杠杆 + 小仓位 = 低真实杠杆</p>
+        <div class="tip-num" id="ruleRealLev">--</div>
+      </div>
+      <div class="tip-card">
+        <h4>&#x1F6E1; 单笔最大亏损</h4>
+        <p>每次最多亏损账户总额的 1%~2%<br>这是仓位控制的绝对下限，不可突破</p>
+        <div class="tip-num red" id="ruleMaxLoss">--</div>
+      </div>
+      <div class="tip-card">
+        <h4>&#x2696; 盈亏比</h4>
+        <p>盈亏比 = 预期盈利 &#247; 最大亏损<br>最低标准：盈亏比 &#8805; 3:1</p>
+        <div class="tip-num" id="ruleRR">--</div>
+      </div>
+      <div class="tip-card">
+        <h4>&#x1F4CA; 胜率与期望</h4>
+        <p>胜率 30% + 盈亏比 3:1 = 正期望<br>10次: 3赢&#xD7;3R=9R, 7亏&#xD7;1R=7R &#x2192; 净赚2R</p>
+        <div class="tip-num green" id="ruleExpectation">--</div>
+      </div>
+    </div>
+
+    <div class="warn-box" style="margin-top:14px;">
+      <div class="warn-icon">&#x26A0;</div>
+      <div>
+        <strong style="color:var(--text);">亏损与回本的指数陷阱：</strong>
+        亏 10% 需涨 11.1% 回本，亏 20% 需涨 25% 回本，亏 50% 需涨 100% 回本，亏 90% 需涨 900% 回本！
+        因此务必将每笔最大亏损严格控制在 1%~2% 以内，确保任何情况下都能留在牌桌上。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let historyData = [];
+let symbolList = [];
+let selectMode = false;
+let selectedIds = new Set();
+let historyFilter = 'all';
+
+function loadHistory() {
+  try {
+    const saved = localStorage.getItem('positionCalcHistory');
+    if (saved) historyData = JSON.parse(saved);
+  } catch(e) {}
+  try {
+    const symSaved = localStorage.getItem('positionSymbolList');
+    if (symSaved) symbolList = JSON.parse(symSaved);
+  } catch(e) {}
+  renderSymbolTags();
+  renderHistoryTable();
+}
+function saveHistory() {
+  try { localStorage.setItem('positionCalcHistory', JSON.stringify(historyData)); } catch(e) {}
+}
+function saveSymbols() {
+  try { localStorage.setItem('positionSymbolList', JSON.stringify(symbolList)); } catch(e) {}
+}
+function genId() { return Date.now(); }
+
+// ============================================================
+// Symbol Management
+// ============================================================
+let draggedSymbol = null;
+
+function addSymbol() {
+  const input = document.getElementById('symbolInput');
+  const name = input.value.trim().toUpperCase();
+  if (!name) {
+    showToast('请输入币种名称');
+    return;
+  }
+  if (symbolList.includes(name)) {
+    showToast('该币种已存在');
+    input.value = '';
+    return;
+  }
+  symbolList.push(name);
+  saveSymbols();
+  renderSymbolTags();
+  input.value = '';
+  input.focus();
+}
+
+function removeSymbol(name) {
+  symbolList = symbolList.filter(s => s !== name);
+  saveSymbols();
+  renderSymbolTags();
+}
+
+function renderSymbolTags() {
+  const container = document.getElementById('symbolTags');
+  if (symbolList.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text3);">暂无已添加的币种</span>';
+    return;
+  }
+  container.innerHTML = symbolList.map(s =>
+    `<span class="symbol-tag" draggable="true" data-symbol="${s}"
+      ondragstart="onSymbolDragStart(event,'${s}')"
+      ondragover="onSymbolDragOver(event)"
+      ondragleave="onSymbolDragLeave(event)"
+      ondrop="onSymbolDrop(event,'${s}')"
+      ondragend="onSymbolDragEnd(event)"
+      ondragenter="onSymbolDragEnter(event)"
+      onclick="fillSymbolInput('${s}')">
+      ${s}
+      <button class="tag-del" onclick="event.stopPropagation(); removeSymbol('${s}')" title="删除">&times;</button>
+    </span>`
+  ).join('');
+}
+
+function fillSymbolInput(name) {
+  document.getElementById('symbolInput').value = name;
+}
+
+function onSymbolDragStart(e, name) {
+  draggedSymbol = name;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.style.opacity = '0.5';
+}
+
+function onSymbolDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function onSymbolDragEnter(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function onSymbolDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function onSymbolDrop(e, targetName) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!draggedSymbol || draggedSymbol === targetName) return;
+  const fromIdx = symbolList.indexOf(draggedSymbol);
+  const toIdx = symbolList.indexOf(targetName);
+  if (fromIdx === -1 || toIdx === -1) return;
+  symbolList.splice(fromIdx, 1);
+  symbolList.splice(toIdx, 0, draggedSymbol);
+  saveSymbols();
+  renderSymbolTags();
+}
+
+function onSymbolDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  e.currentTarget.classList.remove('drag-over');
+  draggedSymbol = null;
+}
+
+document.getElementById('symbolInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); addSymbol(); }
+});
+
+// ============================================================
+// History Filter
+// ============================================================
+function setHistoryFilter(f) {
+  historyFilter = f;
+  const btns = document.querySelectorAll('#historyFilter button');
+  btns.forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === (f === 'all' ? '全部' : (f === 'long' ? '做多' : '做空')));
+  });
+  renderHistoryTable();
+}
+
+// ============================================================
+// Select Mode
+// ============================================================
+function toggleSelectMode() {
+  selectMode = !selectMode;
+  selectedIds.clear();
+  const btn = document.getElementById('selectModeBtn');
+  const batchBtn = document.getElementById('batchDeleteBtn');
+  if (selectMode) {
+    btn.classList.add('active');
+    batchBtn.style.display = '';
+    showToast('点击左侧复选框选择要删除的记录');
+  } else {
+    btn.classList.remove('active');
+    batchBtn.style.display = 'none';
+  }
+  renderHistoryTable();
+}
+
+function batchDeleteSelected() {
+  if (selectedIds.size === 0) {
+    showToast('请先选择要删除的记录');
+    return;
+  }
+  if (!confirm(`确定删除选中的 ${selectedIds.size} 条记录？`)) return;
+  historyData = historyData.filter(r => !selectedIds.has(r.id));
+  saveHistory();
+  selectedIds.clear();
+  selectMode = false;
+  document.getElementById('selectModeBtn').classList.remove('active');
+  document.getElementById('batchDeleteBtn').style.display = 'none';
+  renderHistoryTable();
+  showToast('已删除选中的记录');
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) {
+    selectedIds.delete(id);
+  } else {
+    selectedIds.add(id);
+  }
+  const batchBtn = document.getElementById('batchDeleteBtn');
+  if (selectedIds.size > 0) {
+    batchBtn.innerHTML = `<span>&#x2715;</span> 删除选中 (${selectedIds.size})`;
+  } else {
+    batchBtn.innerHTML = `<span>&#x2715;</span> 删除选中`;
+  }
+}
+
+// ============================================================
+// Toast
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// Fee
+// ============================================================
+function getFeeRates() {
+  const preset = document.getElementById('feePreset').value;
+  if (preset === 'custom_fee') {
+    const maker = parseFloat(document.getElementById('customFeeMaker').value) || 0.018;
+    const taker = parseFloat(document.getElementById('customFeeTaker').value) || 0.045;
+    return { maker, taker };
+  }
+  const fees = {
+    binance_futures_custom: { maker: 0.018, taker: 0.045 },
+    binance_futures:       { maker: 0.020, taker: 0.050 },
+    binance_spot:          { maker: 0.100, taker: 0.100 },
+    okx_futures:           { maker: 0.020, taker: 0.050 },
+    bybit_futures:         { maker: 0.020, taker: 0.060 },
+    huobi_futures:         { maker: 0.020, taker: 0.050 },
+  };
+  return fees[preset] || { maker: 0.020, taker: 0.050 };
+}
+
+  document.getElementById('feePreset').addEventListener('change', function() {
+  document.getElementById('customFeeField').style.display =
+    this.value === 'custom_fee' ? 'block' : 'none';
+});
+
+document.getElementById('entryPrice').addEventListener('focus', function() {
+  if (this.value && this.value.trim() !== '') {
+    this.value = '';
+  }
+});
+
+
+
+// ============================================================
+// Format
+// ============================================================
+function fmt(n, d = 2) {
+  if (n == null || isNaN(n)) return '--';
+  if (Math.abs(n) >= 1e9) return (n / 1e9).toFixed(d) + 'B';
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(d) + 'M';
+  if (Math.abs(n) >= 1e3) return n.toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toFixed(d);
+}
+
+function fmtTime(d) {
+  const pad = v => String(v).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function getQuantityDecimals(price) {
+  if (price >= 10000) return 4;  // BTC-like
+  if (price >= 1000)  return 3;  // ETH-like
+  return 2;
+}
+
+// ============================================================
+// Validation
+// ============================================================
+function validate() {
+  const accountTotal = parseFloat(document.getElementById('accountTotal').value);
+  const entryPrice   = parseFloat(document.getElementById('entryPrice').value);
+  const stopLoss     = parseFloat(document.getElementById('stopLoss').value);
+  const takeProfit   = parseFloat(document.getElementById('takeProfit').value);
+  const direction    = document.querySelector('input[name="direction"]:checked').value;
+
+  if (!accountTotal || !entryPrice || !stopLoss || !takeProfit) {
+    return { ok: false, msg: '请填写所有必填字段（账户总额、开仓价格、止损价格、止盈价格）' };
+  }
+  if (accountTotal <= 0 || entryPrice <= 0 || stopLoss <= 0 || takeProfit <= 0) {
+    return { ok: false, msg: '所有数值必须大于 0' };
+  }
+  if (stopLoss === entryPrice) {
+    return { ok: false, msg: '止损价格不能等于开仓价格，请修改' };
+  }
+
+  let err = '';
+  if (direction === 'long') {
+    if (stopLoss >= entryPrice) err = '做多时：止损价格必须 < 开仓价格';
+    if (takeProfit <= entryPrice && !err) err = '做多时：止盈价格必须 > 开仓价格';
+  } else {
+    if (takeProfit >= entryPrice) err = '做空时：止盈价格必须 < 开仓价格';
+    if (stopLoss <= entryPrice && !err) err = '做空时：止损价格必须 > 开仓价格';
+  }
+  if (err) return { ok: false, msg: err };
+
+  return { ok: true };
+}
+
+function showValidation(msg, type) {
+  const el = document.getElementById('validationMsg');
+  const cls = type === 'danger' ? 'warn-box danger' : 'warn-box caution';
+  el.innerHTML = `<div class="${cls}"><div class="warn-icon">&#x26D4;</div><div>${msg}</div></div>`;
+}
+function hideValidation() {
+  document.getElementById('validationMsg').innerHTML = '';
+}
+
+// ============================================================
+// Calculate
+// ============================================================
+function calculate() {
+  const v = validate();
+  if (!v.ok) {
+    showValidation(v.msg, 'danger');
+    document.getElementById('resultCard').style.display = 'none';
+    return;
+  }
+  hideValidation();
+
+  const accountTotal  = parseFloat(document.getElementById('accountTotal').value);
+  const maxLossPct    = parseFloat(document.getElementById('maxLossPercent').value) / 100;
+  const entryPrice    = parseFloat(document.getElementById('entryPrice').value);
+  const stopLoss      = parseFloat(document.getElementById('stopLoss').value);
+  const takeProfit    = parseFloat(document.getElementById('takeProfit').value);
+  const leverage      = parseFloat(document.getElementById('leverage').value);
+  const direction     = document.querySelector('input[name="direction"]:checked').value;
+  const exchange      = document.getElementById('exchange').value;
+  const symbol        = symbolList.length > 0 ? symbolList.join(',') : null;
+  const { maker: makerRate, taker: takerRate } = getFeeRates();
+  const exchangeNames = { binance:'币安', okx:'OKX', bybit:'Bybit', huobi:'火币', custom:'自定义' };
+
+  // ============================================================
+  // Step 3: Max loss amount
+  // ============================================================
+  const maxLossAmount = accountTotal * maxLossPct;
+
+  // ============================================================
+  // Step 2: Stop distance (absolute price difference)
+  // ============================================================
+  const stopDistance = Math.abs(entryPrice - stopLoss);
+
+  // Step 8: Profit distance (absolute price difference)
+  const profitDistance = Math.abs(takeProfit - entryPrice);
+
+  // ============================================================
+  // Step 4: Fee cost (MODIFIED ALGORITHM)
+  // - Using Taker rate for both sides (most conservative)
+  // - Fee cost % = feeRate * 2
+  // ============================================================
+  const feeCostPct = takerRate * 2;   // 双边手续费百分比
+
+  // ============================================================
+  // Step 2/4: Stop distance as percentage of entry price
+  // ============================================================
+  const stopDistancePct = (stopDistance / entryPrice) * 100;
+
+  // ============================================================
+  // Step 8: Profit distance as percentage of entry price
+  // ============================================================
+  const profitDistancePct = (profitDistance / entryPrice) * 100;
+
+  // ============================================================
+  // Step 4: Actual stop cost = 止损距离% + 手续费% * 2
+  // (NEW in template, was missing in old code)
+  // ============================================================
+  const actualStopCostPct = stopDistancePct + feeCostPct;
+
+  // ============================================================
+  // Step 5: Nominal position size = max loss / actual stop cost
+  // ALGORITHM CHANGE: now uses actualStopCostPct which includes fee factor
+  // OLD: positionValue = maxLossAmount * entryPrice / stopDistance
+  // NEW: positionValue = maxLossAmount / (actualStopCostPct / 100)
+  // ============================================================
+  const positionValue = maxLossAmount / (actualStopCostPct / 100);
+
+  // ============================================================
+  // Step 6: Margin required
+  // ============================================================
+  const marginRequired = positionValue / leverage;
+
+  // ============================================================
+  // Step 7: Quantity
+  // ============================================================
+  const quantity = positionValue / entryPrice;
+  const qtyDecimals = getQuantityDecimals(entryPrice);
+
+  // ============================================================
+  // Step 1: Real leverage = position / account
+  // ============================================================
+  const realLeverage = positionValue / accountTotal;
+
+  // ============================================================
+  // Fees in USDT
+  // ============================================================
+  const openFee  = positionValue * takerRate / 100;
+  const closeFee = positionValue * takerRate / 100;
+  const totalFee = openFee + closeFee;
+
+  // ============================================================
+  // Step 9: Expected profit = position * profit% - position * fee%*2
+  // ALGORITHM CHANGE: formula now explicit per template
+  // OLD: expectedProfit = grossProfit - totalFee (same result but implicit)
+  // NEW: more explicit and clear
+  // ============================================================
+  const expectedProfit = positionValue * (profitDistancePct / 100) - positionValue * (feeCostPct / 100);
+
+  // ============================================================
+  // Step 10: Risk/Reward ratio = expectedProfit / maxLoss
+  // ============================================================
+  const riskRewardRatio = expectedProfit / maxLossAmount;
+
+  // ============================================================
+  // Break-even price (NEW)
+  // The price at which gross profit = total fee cost
+  // For long: entry + entry * feeCostPct/100
+  // For short: entry - entry * feeCostPct/100
+  // ============================================================
+  const breakEvenOffset = entryPrice * (feeCostPct / 100);
+  const breakEvenPrice = direction === 'long'
+    ? entryPrice + breakEvenOffset
+    : entryPrice - breakEvenOffset;
+
+  // ============================================================
+  // Margin ratio = margin / account (NEW)
+  // ============================================================
+  const marginRatioPct = (marginRequired / accountTotal) * 100;
+
+  // ============================================================
+  // Liquidation price
+  // Formula: long: entry * (1 - 1/leverage + mmRate/100)
+  //          short: entry * (1 + 1/leverage - mmRate/100)
+  // ============================================================
+  const mmRate = 0.5;
+  const liqPrice = direction === 'long'
+    ? entryPrice * (1 - 1/leverage + mmRate/100)
+    : entryPrice * (1 + 1/leverage - mmRate/100);
+
+  // ============================================================
+  // ============ RISK CHECKS (逐条检查 per template) ============
+  // ============================================================
+  const checks = [];
+
+  // 1. Margin > account
+  if (marginRequired > accountTotal) {
+    checks.push({ level: 'danger', icon: '&#x2717;', text: '保证金超出账户余额，无法开仓。请减小仓位或降低杠杆。' });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `保证金 ${fmt(marginRequired)} USDT 未超出账户总额 ${fmt(accountTotal)} USDT` });
+  }
+
+  // 2. Margin > 30% of account
+  if (marginRequired > accountTotal * 0.3) {
+    checks.push({ level: 'warn', icon: '&#x26A0;', text: `保证金占比 ${marginRatioPct.toFixed(1)}% 超过 30%，仓位偏重，注意集中度风险。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `保证金占比 ${marginRatioPct.toFixed(1)}%，在安全范围内 (&le; 30%)` });
+  }
+
+  // 3. R:R < 1
+  if (riskRewardRatio < 1) {
+    checks.push({ level: 'danger', icon: '&#x2717;', text: `盈亏比 ${riskRewardRatio.toFixed(2)}:1 不足 1:1，预期盈利 < 最大亏损，不建议开仓。` });
+  } else if (riskRewardRatio < 3) {
+    checks.push({ level: 'warn', icon: '&#x26A0;', text: `盈亏比 ${riskRewardRatio.toFixed(2)}:1 达到 1:1 以上，但低于 3:1，建议调整止盈止损位。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `盈亏比 ${riskRewardRatio.toFixed(2)}:1 ≥ 3:1，达标！` });
+  }
+
+  // 4. Stop distance < fee * 2
+  if (stopDistancePct < feeCostPct) {
+    checks.push({ level: 'danger', icon: '&#x2717;', text: `止损距离 ${stopDistancePct.toFixed(4)}% 小于手续费成本 ${feeCostPct.toFixed(4)}%，不管涨跌都亏，请扩大止损。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `止损距离 ${stopDistancePct.toFixed(4)}% 大于手续费成本 ${feeCostPct.toFixed(4)}%` });
+  }
+
+  // 5. Leverage > 20
+  if (leverage > 20) {
+    checks.push({ level: 'warn', icon: '&#x26A0;', text: `高杠杆 ${leverage}x 交易，极端行情下可能被强平，确认你能承受波动。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `杠杆 ${leverage}x 在安全范围内 (&le; 20x)` });
+  }
+
+  // 6. Direction check (做多止损<开仓 / 做空止损>开仓)
+  const dirCorrect = (direction === 'long' && stopLoss < entryPrice) || (direction === 'short' && stopLoss > entryPrice);
+  if (!dirCorrect) {
+    checks.push({ level: 'danger', icon: '&#x2717;', text: `止损方向错误，请检查输入。做多时止损&lt;开仓，做空时止损&gt;开仓。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `止损方向正确：${direction === 'long' ? '做多，止损 < 开仓' : '做空，止损 > 开仓'}` });
+  }
+
+  // 7. Break-even price comparison
+  const breakEvenReachable = direction === 'long'
+    ? (takeProfit > breakEvenPrice)
+    : (takeProfit < breakEvenPrice);
+  if (!breakEvenReachable) {
+    checks.push({ level: 'warn', icon: '&#x26A0;', text: `止盈价格 ${fmt(takeProfit)} 低于保本价格 ${fmt(breakEvenPrice)}，交易将亏损手续费。` });
+  } else {
+    checks.push({ level: 'pass', icon: '&#x2713;', text: `止盈价格 ${fmt(takeProfit)} 高于保本价格 ${fmt(breakEvenPrice)}，可覆盖手续费` });
+  }
+
+  // ============================================================
+  // ============ DISPLAY ============
+  // ============================================================
+  document.getElementById('resultCard').style.display = 'block';
+
+  // Exchange info strip
+  const feePreset = document.getElementById('feePreset').value;
+  const feeLabelMap = {
+    binance_futures_custom: '币安U本位合约',
+    binance_futures: '币安合约',
+    binance_spot: '币安现货',
+    okx_futures: 'OKX合约',
+    bybit_futures: 'Bybit合约',
+    huobi_futures: '火币合约',
+    custom_fee: '自定义费率',
+  };
+  const stripHtml = `
+    <span class="info-tag"><span class="tag-dot" style="background:${direction === 'long' ? 'var(--green)' : 'var(--red)'}"></span>${exchangeNames[exchange] || exchange}</span>
+    <span class="info-tag">${symbol || 'BTC/USDT'}</span>
+    <span class="info-tag">Taker ${takerRate}% / Maker ${makerRate}%</span>
+    <span class="info-tag">杠杆 ${leverage}x</span>
+  `;
+  document.getElementById('resultInfoStrip').innerHTML = stripHtml;
+
+  // Top stats
+  const dirEl = document.getElementById('statDirection');
+  dirEl.textContent = direction === 'long' ? '做多 ▲' : '做空 ▼';
+  dirEl.style.color = direction === 'long' ? 'var(--green)' : 'var(--red)';
+
+  const rrStatEl = document.getElementById('statRiskReward');
+  rrStatEl.textContent = riskRewardRatio.toFixed(2) + ':1';
+  rrStatEl.style.fontSize = '15px';
+  rrStatEl.style.color = riskRewardRatio >= 3 ? 'var(--green)' : (riskRewardRatio >= 1 ? 'var(--orange)' : 'var(--red)');
+
+  const levStatEl = document.getElementById('statRealLeverage');
+  levStatEl.textContent = realLeverage.toFixed(2) + 'x';
+  levStatEl.style.fontSize = '15px';
+  levStatEl.style.color = realLeverage <= 1 ? 'var(--green)' : (realLeverage <= 3 ? 'var(--orange)' : 'var(--red)');
+
+  // Key values
+  document.getElementById('resPositionValue').textContent = fmt(positionValue) + ' USDT';
+  document.getElementById('posValueBar').style.width = Math.min(realLeverage * 25, 100) + '%';
+
+  document.getElementById('resMargin').textContent = fmt(marginRequired) + ' USDT';
+  document.getElementById('resMarginSub').textContent = `名义仓位 ${fmt(positionValue)} \u00F7 杠杆 ${leverage}x`;
+
+  document.getElementById('resMaxLoss').textContent = fmt(maxLossAmount) + ' USDT';
+  document.getElementById('resMaxLossSub').textContent = '账户总额 ' + fmt(accountTotal) + ' 的 ' + (maxLossPct * 100).toFixed(1) + '%';
+
+  // Distances
+  document.getElementById('resStopDistance').textContent =
+    fmt(stopDistance) + ' (' + stopDistancePct.toFixed(4) + '%)';
+  document.getElementById('resStopDistanceSub').textContent =
+    direction === 'long' ? `开仓 ${fmt(entryPrice)} \u2192 止损 ${fmt(stopLoss)}` : `开仓 ${fmt(entryPrice)} \u2192 止损 ${fmt(stopLoss)}`;
+
+  document.getElementById('resProfitDistance').textContent =
+    fmt(profitDistance) + ' (' + profitDistancePct.toFixed(4) + '%)';
+  document.getElementById('resProfitDistanceSub').textContent =
+    direction === 'long' ? `开仓 ${fmt(entryPrice)} \u2192 止盈 ${fmt(takeProfit)}` : `开仓 ${fmt(entryPrice)} \u2192 止盈 ${fmt(takeProfit)}`;
+
+  // Fees
+  document.getElementById('resTotalFee').textContent = fmt(totalFee) + ' USDT';
+  document.getElementById('resFeeSub').textContent =
+    `开仓 ${fmt(openFee)} + 平仓 ${fmt(closeFee)} (Taker ${takerRate}%)`;
+
+  // Actual stop cost (NEW)
+  document.getElementById('resActualStopCost').textContent = actualStopCostPct.toFixed(4) + '%';
+  document.getElementById('resActualStopCost').style.color = 'var(--red)';
+
+  // Break-even (NEW)
+  const beReachable = (direction === 'long' && breakEvenPrice < takeProfit) ||
+                     (direction === 'short' && breakEvenPrice > takeProfit);
+  document.getElementById('resBreakEven').textContent = fmt(breakEvenPrice);
+  document.getElementById('resBreakEven').style.color = beReachable ? 'var(--green)' : 'var(--orange)';
+  document.getElementById('resBreakEvenSub').textContent =
+    direction === 'long'
+      ? `做多需涨至 ${fmt(breakEvenPrice)} 才能覆盖手续费`
+      : `做空需跌至 ${fmt(breakEvenPrice)} 才能覆盖手续费`;
+
+  // Expected profit (NEW)
+  document.getElementById('resExpectedProfit').textContent = fmt(expectedProfit) + ' USDT';
+  document.getElementById('resExpectedProfit').style.color = expectedProfit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('resExpectedProfitSub').textContent =
+    `名义仓位 ${fmt(positionValue)} \u00D7 止盈距离 ${profitDistancePct.toFixed(4)}% - 手续费 ${fmt(totalFee)}`;
+
+  // Quantity (NEW decimals)
+  document.getElementById('resQuantity').textContent = quantity.toFixed(qtyDecimals);
+  document.getElementById('resQuantity').style.color = 'var(--orange)';
+  document.getElementById('resQuantitySub').textContent = `名义仓位 ${fmt(positionValue)} \u00F7 开仓价格 ${fmt(entryPrice)}`;
+
+  // Real leverage
+  const rlColor = realLeverage <= 1 ? 'var(--green)' : (realLeverage <= 3 ? 'var(--orange)' : 'var(--red)');
+  document.getElementById('resRealLeverage').textContent = realLeverage.toFixed(2) + 'x';
+  document.getElementById('resRealLeverage').style.color = rlColor;
+
+  // Margin ratio (NEW)
+  const mrColor = marginRatioPct <= 10 ? 'var(--green)' : (marginRatioPct <= 30 ? 'var(--orange)' : 'var(--red)');
+  document.getElementById('resMarginRatio').textContent = marginRatioPct.toFixed(2) + '%';
+  document.getElementById('resMarginRatio').style.color = mrColor;
+  document.getElementById('resMarginRatioSub').textContent = `保证金 ${fmt(marginRequired)} \u00F7 账户 ${fmt(accountTotal)}`;
+
+  // R:R ratio
+  const rrEl = document.getElementById('resRiskRewardRatio');
+  let badge = '';
+  let badgeCls = '';
+  if (riskRewardRatio >= 3) {
+    badge = ' &#x2713; 达标'; badgeCls = 'pass';
+  } else if (riskRewardRatio >= 1) {
+    badge = ' &#x26A0; 偏低'; badgeCls = 'warn';
+  } else {
+    badge = ' &#x2717; 不建议'; badgeCls = 'fail';
+  }
+  rrEl.innerHTML = riskRewardRatio.toFixed(2) + ':1' + '<span class="ratio-badge ' + badgeCls + '">' + badge + '</span>';
+  rrEl.style.color = riskRewardRatio >= 3 ? 'var(--green)' : (riskRewardRatio >= 1.5 ? 'var(--orange)' : 'var(--red)');
+
+  // Liquidation
+  document.getElementById('resLiquidation').textContent = fmt(liqPrice);
+  document.getElementById('resLiquidationSub').textContent =
+    direction === 'long'
+      ? `做多跌破 ${fmt(liqPrice)} 将被强平（维持保证金率 0.5%）`
+      : `做空涨破 ${fmt(liqPrice)} 将被强平（维持保证金率 0.5%）`;
+
+  let liqBarPct = 0;
+  if (direction === 'long') {
+    liqBarPct = Math.max(0, Math.min(100, ((entryPrice - liqPrice) / entryPrice) * 100 * 5));
+  } else {
+    liqBarPct = Math.max(0, Math.min(100, ((liqPrice - entryPrice) / entryPrice) * 100 * 5));
+  }
+  document.getElementById('liqBar').style.width = liqBarPct + '%';
+
+  // ============================================================
+  // Risk Check List (逐条显示 per template)
+  // ============================================================
+  const hasDanger = checks.some(c => c.level === 'danger');
+  const hasWarn = checks.some(c => c.level === 'warn');
+  let riskListHtml = '<div class="risk-check-list">';
+  checks.forEach(c => {
+    riskListHtml += `<div class="risk-check-item ${c.level}">
+      <div class="risk-check-icon">${c.icon}</div>
+      <div class="risk-check-text">${c.text}</div>
+    </div>`;
+  });
+  riskListHtml += '</div>';
+  document.getElementById('riskCheckList').innerHTML = riskListHtml;
+
+  // Update greeting banner based on risk
+  const banner = document.getElementById('greetingBanner');
+  if (banner) {
+    if (hasDanger) {
+      banner.className = 'greeting-banner danger';
+      document.getElementById('greetingIcon').innerHTML = '&#x26D4;';
+      document.getElementById('greetingMsg').textContent = '检测到风险问题，请检查上方风险提示后再决定是否开仓';
+    } else if (hasWarn) {
+      banner.className = 'greeting-banner caution';
+      document.getElementById('greetingIcon').innerHTML = '&#x26A0;';
+      document.getElementById('greetingMsg').textContent = '存在一些需要注意的风险，请仔细确认后交易';
+    } else {
+      banner.className = 'greeting-banner good';
+      document.getElementById('greetingIcon').innerHTML = '&#x2713;';
+      document.getElementById('greetingMsg').textContent = '所有风险检查通过，策略符合标准';
+    }
+  }
+
+  // Loss warning
+  const lossW = `<div class="warn-box" style="margin-top:12px;">
+    <div class="warn-icon">&#x2139;</div>
+    <div><strong style="color:var(--text);">亏损与回本对照：</strong>当前每笔最大亏损 ${fmt(maxLossAmount)} USDT (${(maxLossPct*100).toFixed(1)}%)
+    &middot; 亏 1% &rarr; 需涨 1.01% 回本 &#x2713;<br>
+    &middot; 亏 ${(maxLossPct*100).toFixed(1)}% &rarr; 需涨 ${((maxLossPct/(1-maxLossPct))*100).toFixed(2)}% 回本<br>
+    &middot; 亏 10% &rarr; 需涨 11.1% 回本 &#x26A0;<br>
+    &middot; 亏 20% &rarr; 需涨 25.0% 回本 &#x26A0;<br>
+    &middot; 亏 50% &rarr; 需涨 100% 回本 &#x26D4;<br>
+    &middot; 亏 90% &rarr; 需涨 900% 回本 &#x26D4;
+    </div>
+  </div>`;
+  document.getElementById('lossWarning').innerHTML = lossW;
+
+  // ============================================================
+  // Rule cards
+  // ============================================================
+  document.getElementById('ruleRealLev').textContent = realLeverage.toFixed(2) + 'x';
+  document.getElementById('ruleRealLev').style.color = rlColor;
+  document.getElementById('ruleMaxLoss').textContent = fmt(maxLossAmount) + ' USDT';
+  const rrCardEl = document.getElementById('ruleRR');
+  rrCardEl.textContent = riskRewardRatio.toFixed(2) + ':1';
+  rrCardEl.style.color = riskRewardRatio >= 3 ? 'var(--green)' : (riskRewardRatio >= 1.5 ? 'var(--orange)' : 'var(--red)');
+  const expEl = document.getElementById('ruleExpectation');
+  if (riskRewardRatio >= 3) {
+    expEl.textContent = '正期望 \u2713';
+    expEl.className = 'tip-num green';
+  } else if (riskRewardRatio >= 2.3) {
+    expEl.textContent = '斟酌后交易';
+    expEl.className = 'tip-num';
+    expEl.style.color = 'var(--orange)';
+  } else {
+    expEl.textContent = '不建议交易 \u2717';
+    expEl.className = 'tip-num red';
+  }
+
+  // ============================================================
+  // Save to history
+  // ============================================================
+  // Save all calculation results, with dedup
+  {
+    const key = leverage + '|' + entryPrice + '|' + (symbol || '');
+    const exists = historyData.some(r =>
+      (r.leverage + '|' + r.entryPrice + '|' + (r.symbol || '')) === key &&
+      r.direction === direction
+    );
+    if (!exists) {
+      const record = {
+        id: genId(),
+        time: fmtTime(new Date()),
+        exchange: exchangeNames[exchange] || exchange,
+        symbol: symbol || '',
+        direction,
+        accountTotal,
+        maxLossPct: maxLossPct * 100,
+        entryPrice,
+        stopLoss,
+        takeProfit,
+        leverage,
+        positionValue,
+        marginRequired,
+        maxLossAmount,
+        expectedProfit,
+        riskRewardRatio,
+        realLeverage,
+        marginRatioPct,
+        liqPrice,
+        totalFee,
+        openFee,
+        closeFee,
+        stopDistancePct,
+        profitDistancePct,
+        feeCostPct,
+        actualStopCostPct,
+        breakEvenPrice,
+        quantity,
+        qtyDecimals,
+        makerRate,
+        takerRate,
+      };
+      historyData.unshift(record);
+      if (historyData.length > 100) historyData = historyData.slice(0, 100);
+      saveHistory();
+      renderHistoryTable();
+    }
+  }
+}
+
+// ============================================================
+// History Rendering
+// ============================================================
+function renderHistoryTable() {
+  const emptyEl = document.getElementById('historyEmpty');
+  const tableWrap = document.getElementById('historyTableWrapInner');
+
+  const filtered = historyFilter === 'all'
+    ? historyData
+    : historyData.filter(r => r.direction === historyFilter);
+
+  if (filtered.length === 0) {
+    emptyEl.style.display = 'block';
+    tableWrap.style.display = 'none';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  tableWrap.style.display = 'block';
+
+  const html = `<table class="history-table">
+    <thead>
+      <tr>
+        ${selectMode ? '<th>&#x2714;</th>' : ''}
+        <th>时间</th>
+        <th>币种</th>
+        <th>方向</th>
+        <th>开仓价</th>
+        <th>止损</th>
+        <th>止盈</th>
+        <th>仓位</th>
+        <th>保证金</th>
+        <th>保证金%</th>
+        <th>盈亏比</th>
+        <th>真实杠杆</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${filtered.map(r => {
+        const isSelected = selectedIds.has(r.id);
+        return `
+        <tr class="${isSelected ? 'selected' : ''}">
+          ${selectMode ? `<td class="td-check"><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleSelect(${r.id})"></td>` : ''}
+          <td class="td-time" data-label="时间">${r.time}</td>
+          <td class="td-val" data-label="币种">${r.symbol || '-'}</td>
+          <td class="td-dir ${r.direction}" data-label="方向">${r.direction === 'long' ? '做多 ▲' : '做空 ▼'}</td>
+          <td class="td-val blue" data-label="开仓价">${fmt(r.entryPrice)}</td>
+          <td class="td-val red" data-label="止损">${fmt(r.stopLoss)}</td>
+          <td class="td-val green" data-label="止盈">${fmt(r.takeProfit)}</td>
+          <td class="td-val orange" data-label="仓位">${fmt(r.positionValue)}</td>
+          <td class="td-val" data-label="保证金">${fmt(r.marginRequired)}</td>
+          <td class="td-val ${r.marginRatioPct > 30 ? 'red' : r.marginRatioPct > 10 ? 'orange' : 'green'}" data-label="保证金%">${r.marginRatioPct.toFixed(1)}%</td>
+          <td class="td-val ${r.riskRewardRatio >= 3 ? 'green' : r.riskRewardRatio >= 1 ? '' : 'red'}" data-label="盈亏比">${r.riskRewardRatio.toFixed(2)}:1</td>
+          <td class="td-val ${r.realLeverage > 3 ? 'red' : r.realLeverage > 1 ? 'orange' : 'green'}" data-label="真实杠杆">${r.realLeverage.toFixed(2)}x</td>
+          <td class="td-action" data-label="操作"><button class="del-btn" onclick="delRecord(${r.id})" title="删除">&#x2715;</button></td>
+        </tr>
+      `}).join('')}
+    </tbody>
+  </table>`;
+
+  tableWrap.innerHTML = html;
+}
+
+function delRecord(id) {
+  historyData = historyData.filter(r => r.id !== id);
+  selectedIds.delete(id);
+  saveHistory();
+  renderHistoryTable();
+}
+
+function clearHistory() {
+  if (historyData.length === 0) return;
+  if (!confirm('确定清空所有历史记录？')) return;
+  historyData = [];
+  selectedIds.clear();
+  if (selectMode) {
+    selectMode = false;
+    document.getElementById('selectModeBtn').classList.remove('active');
+    document.getElementById('batchDeleteBtn').style.display = 'none';
+  }
+  saveHistory();
+  renderHistoryTable();
+  showToast('历史已清空');
+}
+
+// ============================================================
+// Excel Export
+// ============================================================
+function downloadHistory() {
+  if (historyData.length === 0) {
+    showToast('暂无历史记录可下载');
+    return;
+  }
+
+  const wsData = [
+    ['序号', '时间', '交易所', '币种', '方向', '账户总额(USDT)', '最大亏损比例(%)', '开仓价格', '止损价格', '止盈价格',
+     '杠杆(x)', '名义仓位(USDT)', '保证金(USDT)', '保证金占比(%)', '最大亏损金额(USDT)',
+     '预期盈利(USDT)', '盈亏比(预期盈利:最大亏损)', '真实杠杆', '爆仓价格', '止损距离(%)', '止盈距离(%)',
+     '手续费(USDT)', '实际止损成本(%)', '保本价格', '手续费率(T/M%)'],
+    ...historyData.map((r, i) => [
+      i + 1, r.time, r.exchange, r.symbol || '', r.direction === 'long' ? '做多' : '做空',
+      r.accountTotal, r.maxLossPct.toFixed(2), r.entryPrice, r.stopLoss, r.takeProfit,
+      r.leverage, r.positionValue, r.marginRequired, r.marginRatioPct.toFixed(4),
+      r.maxLossAmount, r.expectedProfit, r.riskRewardRatio.toFixed(2) + ':1',
+      r.realLeverage.toFixed(4), r.liqPrice, r.stopDistancePct.toFixed(4),
+      r.profitDistancePct.toFixed(4), r.totalFee, r.actualStopCostPct.toFixed(4),
+      r.breakEvenPrice, r.takerRate + '% / ' + r.makerRate + '%'
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [
+    { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 10 }, { wch: 7 }, { wch: 14 }, { wch: 14 },
+    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 16 }, { wch: 16 },
+    { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 12 }, { wch: 16 },
+    { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 18 },
+  ];
+
+  // Sheet2: Summary
+  const total = historyData.length;
+  const longCnt = historyData.filter(r => r.direction === 'long').length;
+  const shortCnt = historyData.filter(r => r.direction === 'short').length;
+  const avgRR = total ? (historyData.reduce((s, r) => s + r.riskRewardRatio, 0) / total).toFixed(4) : 0;
+  const passCnt = historyData.filter(r => r.riskRewardRatio >= 3).length;
+  const avgLoss = total ? (historyData.reduce((s, r) => s + r.maxLossAmount, 0) / total).toFixed(4) : 0;
+  const avgRealLev = total ? (historyData.reduce((s, r) => s + r.realLeverage, 0) / total).toFixed(4) : 0;
+  const usedSymbols = [...new Set(historyData.filter(r => r.symbol).map(r => r.symbol))];
+
+  const sumData = [
+    ['仓位管理器 - 计算历史统计摘要'],
+    [''],
+    ['统计项目', '数值'],
+    ['总计算次数', total],
+    ['做多次数', longCnt],
+    ['做空次数', shortCnt],
+    ['盈亏比达标次数 (\u22653:1)', passCnt + ' / ' + total + ' (' + (total ? (passCnt/total*100).toFixed(1) : 0) + '%)'],
+    ['平均盈亏比', avgRR],
+    ['平均最大亏损(USDT)', avgLoss],
+    ['平均真实杠杆', avgRealLev + 'x'],
+    ['已使用币种', usedSymbols.length > 0 ? usedSymbols.join('、') : '无'],
+    [''],
+    ['导出时间', fmtTime(new Date())],
+  ];
+  const wsSum = XLSX.utils.aoa_to_sheet(sumData);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '计算明细');
+  XLSX.utils.book_append_sheet(wb, wsSum, '统计摘要');
+
+  const fileName = '仓位计算历史_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+  XLSX.writeFile(wb, fileName);
+  showToast('Excel 已下载: ' + fileName);
+}
+
+// ============================================================
+// Reset
+// ============================================================
+function resetForm() {
+  document.getElementById('accountTotal').value = '1450';
+  document.getElementById('maxLossPercent').value = '2';
+  document.getElementById('entryPrice').value = '';
+  document.getElementById('stopLoss').value = '';
+  document.getElementById('takeProfit').value = '';
+  document.getElementById('leverage').value = '2';
+  document.getElementById('dirShort').checked = true;
+  document.getElementById('symbolInput').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+  document.getElementById('feePreset').value = 'binance_futures_custom';
+  document.getElementById('customFeeField').style.display = 'none';
+  document.getElementById('resultInfoStrip').innerHTML = '';
+  hideValidation();
+}
+
+// ============================================================
+// Enter Key Listener
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    const enterIds = ['accountTotal', 'entryPrice', 'stopLoss', 'takeProfit', 'customFeeMaker', 'customFeeTaker', 'symbolInput'];
+    if (active && enterIds.includes(active.id)) {
+      e.preventDefault();
+      calculate();
+    }
+  }
+});
+
+// ============================================================
+// Time Greeting & Health Reminder
+// ============================================================
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h >= 23 || h < 5)  return { icon: '&#x1F319;', msg: '凌晨时分，注意休息，别熬太晚哦~', cls: 'caution' };
+  if (h >= 5  && h < 9)  return { icon: '&#x1F305;', msg: '早上好！新的一天，稳扎稳打~', cls: 'good' };
+  if (h >= 9  && h < 12) return { icon: '&#x2600;', msg: '上午好！继续保持专注~', cls: 'good' };
+  if (h >= 12 && h < 14) return { icon: '&#x1F37D;', msg: '中午好！记得站起来走动走动~', cls: 'caution' };
+  if (h >= 14 && h < 18) return { icon: '&#x1F324;', msg: '下午好！下午茶时间加油~', cls: 'good' };
+  if (h >= 18 && h < 22) return { icon: '&#x1F319;', msg: '晚上好！今晚别熬太晚，早点休息~', cls: 'caution' };
+  return { icon: '&#x1F319;', msg: '注意休息，身体是革命的本钱~', cls: 'caution' };
+}
+
+function renderGreeting() {
+  const { icon, msg, cls } = getGreeting();
+  const greetingHtml =
+    `<div class="greeting-banner ${cls}" id="greetingBanner">
+      <div class="greeting-icon" id="greetingIcon">${icon}</div>
+      <div class="greeting-body">
+        <div class="greeting-msg" id="greetingMsg">${msg}</div>
+        <div class="greeting-time" id="greetingTime">当前时间: --:--:--</div>
+      </div>
+    </div>`;
+  document.querySelector('.hero-title').insertAdjacentHTML('afterend', greetingHtml);
+}
+
+function updateGreetingTime() {
+  const el = document.getElementById('greetingTime');
+  if (el) {
+    el.textContent = '当前时间: ' + new Date().toLocaleTimeString('zh-CN');
+  }
+}
+
+// Boot
+loadHistory();
+renderGreeting();
+updateGreetingTime();
+setInterval(updateGreetingTime, 1000);
+</script>
+</body>
+</html>
