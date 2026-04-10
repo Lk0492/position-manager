@@ -941,8 +941,8 @@ body {
           <input type="number" id="stopLoss" value="" min="0.01" step="any" placeholder="例如 105000">
         </div>
         <div class="field">
-          <label>止盈价格 <span class="req">*</span></label>
-          <input type="number" id="takeProfit" value="" min="0.01" step="any" placeholder="例如 70000">
+          <label>止盈价格 <span class="tip-label">（自动计算 3:1）</span></label>
+          <input type="number" id="takeProfit" value="" min="0.01" step="any" placeholder="自动计算或手动输入">
         </div>
         <div class="field">
           <label>杠杆倍数</label>
@@ -1478,6 +1478,163 @@ document.getElementById('entryPrice').addEventListener('focus', function() {
   }
 });
 
+// ============================================================
+// 自动计算止盈价格（盈亏比3:1）
+// ============================================================
+
+/**
+ * 使用高精度计算避免浮点数精度问题
+ * 将数值转为整数进行计算，最后再转回小数
+ */
+function getDecimalPlaces(num) {
+  if (!num || num === 0) return 0;
+  const str = num.toString();
+  const dotIndex = str.indexOf('.');
+  if (dotIndex === -1) return 0;
+  return str.length - dotIndex - 1;
+}
+
+/**
+ * 高精度加法
+ */
+function preciseAdd(a, b) {
+  const maxDecimals = Math.max(getDecimalPlaces(a), getDecimalPlaces(b));
+  const factor = Math.pow(10, maxDecimals);
+  return (Math.round(a * factor) + Math.round(b * factor)) / factor;
+}
+
+/**
+ * 高精度减法
+ */
+function preciseSubtract(a, b) {
+  const maxDecimals = Math.max(getDecimalPlaces(a), getDecimalPlaces(b));
+  const factor = Math.pow(10, maxDecimals);
+  return (Math.round(a * factor) - Math.round(b * factor)) / factor;
+}
+
+/**
+ * 高精度乘法
+ */
+function preciseMultiply(a, b) {
+  const maxDecimals = Math.max(getDecimalPlaces(a), getDecimalPlaces(b));
+  const factor = Math.pow(10, maxDecimals);
+  return (Math.round(a * factor) * Math.round(b * factor)) / (factor * factor);
+}
+
+/**
+ * 高精度除法
+ */
+function preciseDivide(a, b) {
+  if (b === 0) return 0;
+  const maxDecimals = Math.max(getDecimalPlaces(a), getDecimalPlaces(b), 8);
+  const factor = Math.pow(10, maxDecimals);
+  return (Math.round(a * factor) / Math.round(b * factor));
+}
+
+/**
+ * 自动计算止盈价格（基于3:1盈亏比 + 双边手续费补偿）
+ * 
+ * 问题根源分析：
+ * - 如果直接用 止盈距离 = 3 × 止损距离 + 手续费补偿 计算
+ * - 得到的止盈价格在实际计算盈亏比时会有偏差（因为盈亏比 = (名义盈利 - 手续费) / 最大亏损）
+ * 
+ * 正确的计算逻辑：
+ * - 盈亏比定义：(名义盈利 - 双边手续费) / 最大亏损 = 3:1
+ * - 名义盈利 = 最大亏损 × 3 + 双边手续费
+ * - 止盈距离百分比 = 名义盈利 / 名义仓位
+ * 
+ * 做多：止盈价格 = 开仓价格 × (1 + 止盈距离百分比)
+ * 做空：止盈价格 = 开仓价格 × (1 - 止盈距离百分比)
+ */
+function autoCalculateTakeProfit() {
+  const entryPriceInput = document.getElementById('entryPrice');
+  const stopLossInput = document.getElementById('stopLoss');
+  const takeProfitInput = document.getElementById('takeProfit');
+  const accountTotalInput = document.getElementById('accountTotal');
+  const maxLossPercentInput = document.getElementById('maxLossPercent');
+  
+  const entryPrice = parseFloat(entryPriceInput.value);
+  const stopLoss = parseFloat(stopLossInput.value);
+  const accountTotal = parseFloat(accountTotalInput.value);
+  const maxLossPercent = parseFloat(maxLossPercentInput.value);
+  
+  // 只有当开仓价格、止损价格、账户总额和最大亏损比例都有有效值时才计算
+  if (isNaN(entryPrice) || isNaN(stopLoss) || 
+      isNaN(accountTotal) || isNaN(maxLossPercent) ||
+      entryPrice <= 0 || stopLoss <= 0 || accountTotal <= 0 || maxLossPercent <= 0) {
+    return;
+  }
+  
+  // 获取当前交易方向
+  const direction = document.querySelector('input[name="direction"]:checked').value;
+  
+  // 获取手续费率
+  const { taker: takerRate } = getFeeRates();
+  
+  // 计算最大亏损金额
+  const maxLossAmount = accountTotal * (maxLossPercent / 100);
+  
+  // 计算止损距离百分比
+  let stopDistancePct;
+  if (direction === 'long') {
+    if (stopLoss >= entryPrice) return;
+    stopDistancePct = ((entryPrice - stopLoss) / entryPrice) * 100;
+  } else {
+    if (stopLoss <= entryPrice) return;
+    stopDistancePct = ((stopLoss - entryPrice) / entryPrice) * 100;
+  }
+  
+  // 计算实际止损成本百分比（含双边手续费）
+  const feeCostPct = takerRate * 2;
+  const actualStopCostPct = stopDistancePct + feeCostPct;
+  
+  // 计算名义仓位 = 最大亏损 / 实际止损成本百分比
+  const positionValue = maxLossAmount / (actualStopCostPct / 100);
+  
+  // 计算双边手续费（USDT）
+  const totalFee = positionValue * takerRate / 100 * 2;
+  
+  // 计算止盈价格
+  // 目标：盈亏比 = 3:1，即 (名义盈利 - 手续费) / 最大亏损 = 3
+  // 名义盈利 = 最大亏损 × 3 + 手续费
+  // 止盈距离百分比 = 名义盈利 / 名义仓位
+  let takeProfit;
+  
+  if (direction === 'long') {
+    const targetProfit = maxLossAmount * 3 + totalFee;
+    const profitDistancePct = (targetProfit / positionValue) * 100;
+    takeProfit = entryPrice * (1 + profitDistancePct / 100);
+  } else {
+    const targetProfit = maxLossAmount * 3 + totalFee;
+    const profitDistancePct = (targetProfit / positionValue) * 100;
+    takeProfit = entryPrice * (1 - profitDistancePct / 100);
+  }
+  
+  // 验证计算出的止盈价格是否有效
+  if (takeProfit <= 0 || !isFinite(takeProfit)) return;
+  
+  // 验证止盈方向是否正确
+  if (direction === 'long' && takeProfit <= entryPrice) return;
+  if (direction === 'short' && takeProfit >= entryPrice) return;
+  
+  // 精确到小数点后两位
+  takeProfit = Math.round(takeProfit * 100) / 100;
+  
+  // 更新止盈价格输入框
+  takeProfitInput.value = takeProfit;
+}
+
+// 监听开仓价格变化
+document.getElementById('entryPrice').addEventListener('input', autoCalculateTakeProfit);
+
+// 监听止损价格变化
+document.getElementById('stopLoss').addEventListener('input', autoCalculateTakeProfit);
+
+// 监听交易方向变化（当方向改变时，重新计算止盈价格）
+document.querySelectorAll('input[name="direction"]').forEach(function(radio) {
+  radio.addEventListener('change', autoCalculateTakeProfit);
+});
+
 
 
 // ============================================================
@@ -1512,25 +1669,38 @@ function validate() {
   const takeProfit   = parseFloat(document.getElementById('takeProfit').value);
   const direction    = document.querySelector('input[name="direction"]:checked').value;
 
-  if (!accountTotal || !entryPrice || !stopLoss || !takeProfit) {
-    return { ok: false, msg: '请填写所有必填字段（账户总额、开仓价格、止损价格、止盈价格）' };
+  // 止盈价格改为可选（会自动计算），但如果有值则必须有效
+  if (!accountTotal || !entryPrice || !stopLoss) {
+    return { ok: false, msg: '请填写必填字段：账户总额、开仓价格、止损价格' };
   }
-  if (accountTotal <= 0 || entryPrice <= 0 || stopLoss <= 0 || takeProfit <= 0) {
-    return { ok: false, msg: '所有数值必须大于 0' };
+  if (accountTotal <= 0 || entryPrice <= 0 || stopLoss <= 0) {
+    return { ok: false, msg: '账户总额、开仓价格、止损价格必须大于 0' };
   }
   if (stopLoss === entryPrice) {
     return { ok: false, msg: '止损价格不能等于开仓价格，请修改' };
   }
 
+  // 基础方向验证
   let err = '';
   if (direction === 'long') {
     if (stopLoss >= entryPrice) err = '做多时：止损价格必须 < 开仓价格';
-    if (takeProfit <= entryPrice && !err) err = '做多时：止盈价格必须 > 开仓价格';
   } else {
-    if (takeProfit >= entryPrice) err = '做空时：止盈价格必须 < 开仓价格';
-    if (stopLoss <= entryPrice && !err) err = '做空时：止损价格必须 > 开仓价格';
+    if (stopLoss <= entryPrice) err = '做空时：止损价格必须 > 开仓价格';
   }
   if (err) return { ok: false, msg: err };
+
+  // 如果用户手动输入了止盈价格，验证其方向是否正确
+  if (!isNaN(takeProfit) && takeProfit > 0) {
+    if (direction === 'long') {
+      if (takeProfit <= entryPrice) {
+        return { ok: false, msg: '做多时：止盈价格必须 > 开仓价格（您手动输入的值不满足条件）' };
+      }
+    } else {
+      if (takeProfit >= entryPrice) {
+        return { ok: false, msg: '做空时：止盈价格必须 < 开仓价格（您手动输入的值不满足条件）' };
+      }
+    }
+  }
 
   return { ok: true };
 }
@@ -1556,11 +1726,13 @@ function calculate() {
   }
   hideValidation();
 
+  // ============================================================
+  // 基础参数获取（按依赖顺序排列）
+  // ============================================================
   const accountTotal  = parseFloat(document.getElementById('accountTotal').value);
   const maxLossPct    = parseFloat(document.getElementById('maxLossPercent').value) / 100;
   const entryPrice    = parseFloat(document.getElementById('entryPrice').value);
   const stopLoss      = parseFloat(document.getElementById('stopLoss').value);
-  const takeProfit    = parseFloat(document.getElementById('takeProfit').value);
   const leverage      = parseFloat(document.getElementById('leverage').value);
   const direction     = document.querySelector('input[name="direction"]:checked').value;
   const exchange      = document.getElementById('exchange').value;
@@ -1568,6 +1740,45 @@ function calculate() {
   const symbol        = inputVal || null;
   const { maker: makerRate, taker: takerRate } = getFeeRates();
   const exchangeNames = { binance:'币安', okx:'OKX', bybit:'Bybit', huobi:'火币', custom:'自定义' };
+
+  // ============================================================
+  // 自动计算止盈价格（如果用户未手动输入，基于3:1盈亏比 + 双边手续费补偿）
+  // 计算逻辑与 autoCalculateTakeProfit() 保持一致
+  // ============================================================
+  let takeProfit = parseFloat(document.getElementById('takeProfit').value);
+  
+  // 如果止盈价格为空或无效，基于3:1盈亏比自动计算
+  if (isNaN(takeProfit) || takeProfit <= 0) {
+    // 计算止损距离百分比
+    const stopDistancePct = (Math.abs(entryPrice - stopLoss) / entryPrice) * 100;
+    
+    // 计算实际止损成本百分比（含双边手续费）
+    const feeCostPct = takerRate * 2;
+    const actualStopCostPct = stopDistancePct + feeCostPct;
+    
+    // 计算名义仓位 = 最大亏损 / 实际止损成本百分比
+    const positionValueForCalc = maxLossAmount / (actualStopCostPct / 100);
+    
+    // 计算双边手续费
+    const totalFeeForCalc = positionValueForCalc * takerRate / 100 * 2;
+    
+    // 目标：盈亏比 = 3:1，即 (名义盈利 - 手续费) / 最大亏损 = 3
+    // 名义盈利 = 最大亏损 × 3 + 手续费
+    // 止盈距离百分比 = 名义盈利 / 名义仓位
+    const targetProfit = maxLossAmount * 3 + totalFeeForCalc;
+    const profitDistancePct = (targetProfit / positionValueForCalc) * 100;
+    
+    if (direction === 'long') {
+      takeProfit = entryPrice * (1 + profitDistancePct / 100);
+    } else {
+      takeProfit = entryPrice * (1 - profitDistancePct / 100);
+    }
+    
+    // 精确到小数点后两位
+    takeProfit = Math.round(takeProfit * 100) / 100;
+    // 更新输入框显示
+    document.getElementById('takeProfit').value = takeProfit;
+  }
 
   // ============================================================
   // Step 3: Max loss amount
@@ -1937,52 +2148,45 @@ function calculate() {
   // ============================================================
   // Save to history
   // ============================================================
-  // Save all calculation results, with dedup
+  // 每次计算都保存记录（不基于参数去重，通过 ID 避免重复保存）
   {
-    const key = leverage + '|' + entryPrice + '|' + (symbol || '');
-    const exists = historyData.some(r =>
-      (r.leverage + '|' + r.entryPrice + '|' + (r.symbol || '')) === key &&
-      r.direction === direction
-    );
-    if (!exists) {
-      const record = {
-        id: genId(),
-        time: fmtTime(new Date()),
-        exchange: exchangeNames[exchange] || exchange,
-        symbol: symbol || '',
-        direction,
-        accountTotal,
-        maxLossPct: maxLossPct * 100,
-        entryPrice,
-        stopLoss,
-        takeProfit,
-        leverage,
-        positionValue,
-        marginRequired,
-        maxLossAmount,
-        expectedProfit,
-        riskRewardRatio,
-        realLeverage,
-        marginRatioPct,
-        liqPrice,
-        totalFee,
-        openFee,
-        closeFee,
-        stopDistancePct,
-        profitDistancePct,
-        feeCostPct,
-        actualStopCostPct,
-        breakEvenPrice,
-        quantity,
-        qtyDecimals,
-        makerRate,
-        takerRate,
-      };
-      historyData.unshift(record);
-      if (historyData.length > 100) historyData = historyData.slice(0, 100);
-      saveHistory();
-      renderHistoryTable();
-    }
+    const record = {
+      id: genId(),
+      time: fmtTime(new Date()),
+      exchange: exchangeNames[exchange] || exchange,
+      symbol: symbol || '',
+      direction,
+      accountTotal,
+      maxLossPct: maxLossPct * 100,
+      entryPrice,
+      stopLoss,
+      takeProfit,
+      leverage,
+      positionValue,
+      marginRequired,
+      maxLossAmount,
+      expectedProfit,
+      riskRewardRatio,
+      realLeverage,
+      marginRatioPct,
+      liqPrice,
+      totalFee,
+      openFee,
+      closeFee,
+      stopDistancePct,
+      profitDistancePct,
+      feeCostPct,
+      actualStopCostPct,
+      breakEvenPrice,
+      quantity,
+      qtyDecimals,
+      makerRate,
+      takerRate,
+    };
+    historyData.unshift(record);
+    if (historyData.length > 100) historyData = historyData.slice(0, 100);
+    saveHistory();
+    renderHistoryTable();
   }
 }
 
