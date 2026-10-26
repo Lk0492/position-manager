@@ -1,0 +1,592 @@
+/* Typography and responsive refinements based on the supplied A design. */
+.brand {
+  font-size: 18px;
+}
+.brand-icon {
+  font-size: 23px;
+}
+.brand small {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+}
+.site-header nav {
+  font-size: 14px;
+}
+.local-badge {
+  font-size: 12px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  line-height: 1.5;
+}
+.hero p {
+  font-size: 16px;
+  line-height: 1.7;
+}
+.hero-mark > span:first-child {
+  font-size: 11px;
+}
+.hero-mark > span:last-child {
+  font-size: 12px;
+}
+.greeting {
+  font-size: 14px;
+}
+.greeting time {
+  font-size: 12px;
+}
+.panel h2 {
+  font-size: 22px;
+  line-height: 1.4;
+}
+.unit-tag {
+  font-size: 12px;
+}
+label,
+legend {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+input:not([type="checkbox"]),
+select {
+  font-size: 16px;
+  height: 48px;
+  padding-left: 13px;
+}
+input::placeholder {
+  font-size: 14px;
+}
+.segmented button {
+  font-size: 14px;
+  min-height: 42px;
+}
+.segmented button.active {
+  font-weight: 600;
+}
+.section-divider {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 28px 0 20px;
+}
+.target-hint {
+  font-size: 12px;
+  line-height: 1.7;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.text-button {
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 28px;
+}
+.optional {
+  font-size: 12px;
+}
+.button {
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 44px;
+}
+.button.primary:not(.small) {
+  font-size: 16px;
+  font-weight: 600;
+}
+.button.small {
+  font-size: 13px;
+  min-height: 38px;
+}
+.symbol-tag button {
+  font-size: 13px;
+}
+.form-footnote {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.empty-results .eyebrow {
+  font-size: 11px;
+}
+.empty-results h2 {
+  font-size: 25px;
+  line-height: 1.4;
+}
+.empty-results p {
+  font-size: 16px;
+  line-height: 1.75;
+}
+.empty-metrics b {
+  font-size: 12px;
+}
+.empty-metrics span {
+  font-size: 13px;
+}
+.empty-note {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.status,
+.result-tags span {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.metric-label {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.position-hero .metric-label {
+  font-size: 14px;
+}
+.position-amount {
+  font-size: 34px;
+}
+.position-amount small {
+  font-size: 14px;
+}
+.position-footer {
+  font-size: 12px;
+  line-height: 1.6;
+  flex-wrap: wrap;
+}
+.metric-value {
+  font-size: 20px;
+  line-height: 1.4;
+}
+.metric-note {
+  font-size: 13px;
+  line-height: 1.65;
+}
+.liquidation strong {
+  font-size: 24px;
+}
+.liquidation p {
+  font-size: 13px;
+  line-height: 1.7;
+}
+.risk-heading h3 {
+  font-size: 16px;
+}
+.risk-heading > span {
+  font-size: 12px;
+}
+.risk-item strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.risk-item p {
+  font-size: 14px;
+  line-height: 1.65;
+}
+.notice {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.recovery-note {
+  font-size: 13px;
+}
+.count {
+  font-size: 12px;
+}
+.history-subhead > span {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.history-empty p {
+  font-size: 15px;
+}
+.history-empty small {
+  font-size: 13px;
+  line-height: 1.7;
+}
+table {
+  font-size: 14px;
+}
+.time-cell {
+  font-size: 12px;
+}
+th,
+td {
+  line-height: 1.6;
+}
+.principles-heading h2 {
+  font-size: 23px;
+  line-height: 1.4;
+}
+.principles article > span {
+  font-size: 12px;
+}
+.principles h3 {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.principles p {
+  font-size: 14px;
+  line-height: 1.75;
+}
+.principles strong {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.loss-reminder > strong {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.loss-reminder > div {
+  font-size: 13px;
+  line-height: 1.65;
+  flex-wrap: wrap;
+}
+
+.toast {
+  font-size: 14px;
+}
+.update-banner {
+  font-size: 14px;
+}
+.fields {
+  gap: 22px 18px;
+}
+.field:has(#feePreset),
+.field:has(#customFeeTaker),
+.field:has(#customFeeMaker) {
+  grid-column: 1/-1;
+}
+.history-header,
+.history-subhead {
+  flex-wrap: wrap;
+}
+.history-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 1100px) {
+  .metric-value {
+    font-size: 20px;
+  }
+  .principles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .history-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .loss-reminder {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+@media (max-width: 800px) {
+  .brand {
+    font-size: 16px;
+  }
+  .brand-icon {
+    font-size: 21px;
+  }
+  .brand small {
+    font-size: 10px;
+    letter-spacing: 1px;
+  }
+  .site-header nav > a {
+    font-size: 14px;
+  }
+  .site-header nav {
+    gap: 12px;
+  }
+  .local-badge {
+    font-size: 0;
+  }
+  .hero p {
+    font-size: 16px;
+  }
+  .greeting {
+    font-size: 14px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .greeting time {
+    font-size: 12px;
+    margin-left: auto;
+  }
+  .panel h2 {
+    font-size: 22px;
+  }
+  .empty-results h2 {
+    font-size: 25px;
+  }
+  .empty-results {
+    min-height: 420px;
+  }
+  .empty-metrics {
+    gap: 22px;
+  }
+  .empty-metrics span {
+    font-size: 13px;
+  }
+  .empty-note {
+    font-size: 14px;
+  }
+  .metric-value {
+    font-size: 20px;
+  }
+  .history-subhead > span {
+    font-size: 12px;
+  }
+  .target-hint {
+    font-size: 12px;
+  }
+  .text-button {
+    font-size: 13px;
+  }
+  .risk-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .position-footer {
+    gap: 6px 12px;
+  }
+  .principles-grid {
+    gap: 24px;
+  }
+  .liquidation {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .liquidation p {
+    text-align: left;
+  }
+}
+@media (max-width: 480px) {
+  .app {
+    padding: 0 16px;
+  }
+  .panel {
+    padding: 22px;
+  }
+  .fields.two-col {
+    grid-template-columns: 1fr;
+  }
+  .field {
+    min-width: 0;
+  }
+  .hero h1 {
+    letter-spacing: -1px;
+  }
+  .hero p {
+    font-size: 15px;
+  }
+  .empty-results p {
+    font-size: 15px;
+  }
+  .principles-grid {
+    grid-template-columns: 1fr;
+  }
+  .principles article {
+    padding-bottom: 12px;
+  }
+  .history-actions {
+    gap: 8px;
+  }
+  .history-actions .button {
+    padding: 9px 11px;
+  }
+  .table-scroll {
+    margin: 0 -22px;
+    max-width: calc(100% + 44px);
+  }
+  .loss-reminder > div {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .empty-metrics {
+    gap: 14px;
+  }
+  .empty-note {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .site-header nav > a {
+    font-size: 13px;
+  }
+}
+@media (max-width: 380px) {
+  .hero h1 {
+    font-size: 29px;
+  }
+  .hero p {
+    font-size: 15px;
+  }
+  .target-hint {
+    font-size: 12px;
+  }
+  .text-button {
+    font-size: 13px;
+  }
+  .metric-value {
+    font-size: 20px;
+  }
+  .brand small {
+    font-size: 10px;
+  }
+  .greeting {
+    font-size: 13px;
+  }
+}
+.direction {
+  height: 50px;
+}
+.direction button {
+  min-height: 42px;
+  padding: 6px;
+}
+.fields .span-two {
+  grid-column: 1 / -1;
+}
+.fee-fields > .field {
+  grid-column: 1 / -1;
+}
+.target-hint {
+  align-items: center;
+}
+.symbol-tag button {
+  min-height: 36px;
+}
+.symbol-tag button:last-child {
+  min-width: 36px;
+}
+.input-clear button {
+  top: 6px;
+  right: 3px;
+  width: 36px;
+  height: 36px;
+}
+.input-clear input {
+  padding-right: 42px;
+}
+.risk-item {
+  padding: 13px;
+  gap: 12px;
+}
+.risk-icon {
+  margin-top: 2px;
+  width: 22px;
+  height: 22px;
+}
+.risk-item > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.table-scroll {
+  overscroll-behavior-x: contain;
+}
+.delete-button {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+}
+.principles article {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+}
+.loss-reminder > strong {
+  white-space: normal;
+}
+.history {
+  scroll-margin-top: 24px;
+}
+.update-banner {
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+}
+@media (min-width: 801px) and (max-width: 960px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .app {
+    max-width: 760px;
+  }
+  .empty-results {
+    min-height: 420px;
+  }
+}
+@media (max-width: 800px) {
+  .local-badge {
+    width: 26px;
+    height: 26px;
+    justify-content: center;
+  }
+  .panel-heading {
+    flex-wrap: wrap;
+  }
+  .empty-metrics {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .empty-metrics > div {
+    flex: 1;
+  }
+  .empty-metrics span {
+    line-height: 1.7;
+  }
+  .position-amount {
+    font-size: clamp(30px, 8vw, 38px);
+  }
+  .principles article {
+    padding: 18px;
+  }
+  .update-banner {
+    flex-wrap: wrap;
+  }
+  .update-banner > span {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .app {
+    padding: 0 16px;
+  }
+  .panel {
+    padding: 20px;
+  }
+  .table-scroll {
+    margin: 0 -20px;
+    max-width: calc(100% + 40px);
+  }
+  .hero h1 {
+    font-size: clamp(28px, 7.5vw, 34px);
+    letter-spacing: -1px;
+  }
+  .mobile-break {
+    display: block;
+  }
+  .greeting time {
+    letter-spacing: 0;
+  }
+  .form-actions .secondary {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .history-subhead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .empty-results h2 {
+    font-size: 23px;
+  }
+  .empty-results p {
+    font-size: 14px;
+  }
+  .empty-metrics span {
+    font-size: 12px;
+  }
+  .metric:nth-child(odd) {
+    padding-right: 10px;
+  }
+  .metric:nth-child(even) {
+    padding-left: 10px;
+  }
+  .metric-value {
+    font-size: 19px;
+  }
+}

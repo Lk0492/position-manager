@@ -1,0 +1,155 @@
+/* Neutral surfaces and semantic colors shared by every component. */
+:root,
+:root[data-appearance="light"] {
+  color-scheme: light dark;
+  --canvas: #f5f5f7;
+  --surface: #ffffff;
+  --surface-muted: #f5f5f7;
+  --surface-hover: #ebebed;
+  --field-bg: #fafafa;
+  --field-focus: #ffffff;
+  --text: #1d1d1f;
+  --text-secondary: #626266;
+  --line: #e2e2e5;
+  --control-border: #d2d2d7;
+  --action-bg: #262628;
+  --action-hover: #414144;
+  --action-text: #ffffff;
+  --focus: #0071e3;
+  --focus-halo: #0071e31f;
+  --selection: #dedee2;
+  --selected-row: #ededef;
+  --green: #16734a;
+  --success-bg: #edf7f0;
+  --success-icon-bg: #dbeee2;
+  --red: #b5333e;
+  --danger-bg: #fceff0;
+  --danger-border: #edcdd1;
+  --danger-icon-bg: #f5dce0;
+  --warning: #825b19;
+  --warning-bg: #fbf5e9;
+  --warning-border: #e9dbbd;
+  --warning-icon-bg: #f2e6cb;
+  --bar-1: #e2e2e5;
+  --bar-2: #b7b7bc;
+  --bar-3: #737379;
+  --track: #dedee2;
+  --progress: #737379;
+  --toast-bg: #262628;
+  --toast-text: #f5f5f7;
+  --panel-shadow: 0 4px 24px #00000003;
+  --control-shadow: 0 1px 4px #00000012;
+  --floating-shadow: 0 8px 32px #0000001f;
+}
+
+/* Let the browser apply the system preference before React starts, and live. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance="light"]) {
+    --canvas: #111113;
+    --surface: #1c1c1e;
+    --surface-muted: #262628;
+    --surface-hover: #343437;
+    --field-bg: #242426;
+    --field-focus: #2c2c2e;
+    --text: #f5f5f7;
+    --text-secondary: #a6a6ad;
+    --line: #38383b;
+    --control-border: #505055;
+    --action-bg: #e5e5e7;
+    --action-hover: #ffffff;
+    --action-text: #1d1d1f;
+    --focus: #82b8f0;
+    --focus-halo: #82b8f02b;
+    --selection: #45454b;
+    --selected-row: #2b2b2e;
+    --green: #80d7a8;
+    --success-bg: #203229;
+    --success-icon-bg: #2b4938;
+    --red: #f19098;
+    --danger-bg: #392529;
+    --danger-border: #624047;
+    --danger-icon-bg: #513139;
+    --warning: #e7c17c;
+    --warning-bg: #342d20;
+    --warning-border: #5c4c30;
+    --warning-icon-bg: #4b3e28;
+    --bar-1: #38383c;
+    --bar-2: #626268;
+    --bar-3: #9a9aa1;
+    --track: #434348;
+    --progress: #a6a6ad;
+    --toast-bg: #343437;
+    --toast-text: #f5f5f7;
+    --panel-shadow: none;
+    --control-shadow: 0 1px 4px #00000033;
+    --floating-shadow: 0 8px 32px #00000059;
+  }
+}
+:root[data-appearance="dark"] {
+  color-scheme: dark;
+  --canvas: #111113;
+  --surface: #1c1c1e;
+  --surface-muted: #262628;
+  --surface-hover: #343437;
+  --field-bg: #242426;
+  --field-focus: #2c2c2e;
+  --text: #f5f5f7;
+  --text-secondary: #a6a6ad;
+  --line: #38383b;
+  --control-border: #505055;
+  --action-bg: #e5e5e7;
+  --action-hover: #ffffff;
+  --action-text: #1d1d1f;
+  --focus: #82b8f0;
+  --focus-halo: #82b8f02b;
+  --selection: #45454b;
+  --selected-row: #2b2b2e;
+  --green: #80d7a8;
+  --success-bg: #203229;
+  --success-icon-bg: #2b4938;
+  --red: #f19098;
+  --danger-bg: #392529;
+  --danger-border: #624047;
+  --danger-icon-bg: #513139;
+  --warning: #e7c17c;
+  --warning-bg: #342d20;
+  --warning-border: #5c4c30;
+  --warning-icon-bg: #4b3e28;
+  --bar-1: #38383c;
+  --bar-2: #626268;
+  --bar-3: #9a9aa1;
+  --track: #434348;
+  --progress: #a6a6ad;
+  --toast-bg: #343437;
+  --toast-text: #f5f5f7;
+  --panel-shadow: none;
+  --control-shadow: 0 1px 4px #00000033;
+  --floating-shadow: 0 8px 32px #00000059;
+}
+
+/* Respect the OS contrast preference without changing the component layout. */
+@media (prefers-contrast: more) {
+  :root,
+  :root[data-appearance="light"],
+  :root[data-appearance="dark"] {
+    --text-secondary: #48484c;
+    --line: #929298;
+    --control-border: #737379;
+  }
+}
+
+@media (prefers-color-scheme: dark) and (prefers-contrast: more) {
+  :root:not([data-appearance="light"]) {
+    --text-secondary: #d1d1d6;
+    --line: #83838a;
+    --control-border: #98989f;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root[data-appearance="dark"] {
+    --text-secondary: #d1d1d6;
+    --line: #83838a;
+    --control-border: #98989f;
+  }
+}
